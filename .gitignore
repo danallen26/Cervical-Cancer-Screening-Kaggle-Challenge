@@ -1,0 +1,7 @@
+rectangles.csv
+cv2
+train/
+*.7z
+*.zip
+os
+env/
