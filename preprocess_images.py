@@ -17,14 +17,18 @@ from subprocess import check_output
 print(check_output(["ls", "./train"]).decode("utf8"))
 
 TRAIN_DATA = "./train"
+CROP_DATA = "./crop_train"
 
-types = ['Type_1']#,'Type_2','Type_3']
+types = ['Type_1','Type_2','Type_3']
 type_ids = []
 
 for type in enumerate(types):
     type_i_files = glob(os.path.join(TRAIN_DATA, type[1], "*.jpg"))
     type_i_ids = np.array([s[len(TRAIN_DATA)+8:-4] for s in type_i_files])
-    type_ids.append(type_i_ids[:5])
+    type_ids.append(type_i_ids)
+    # type_ids.append(type_i_ids[:5])
+
+print type_ids
 
 def get_filename(image_id, image_type):
     """
@@ -46,6 +50,26 @@ def get_filename(image_id, image_type):
     ext = 'jpg'
     return os.path.join(data_path, "{}.{}".format(image_id, ext))
 
+def get_cropped_filename(image_id, image_type):
+    """
+    Method to set cropped image file path from its id and type   
+    """
+    if image_type == "Type_1" or \
+        image_type == "Type_2" or \
+        image_type == "Type_3":
+        data_path = os.path.join(CROP_DATA, image_type)
+    elif image_type == "Test":
+        data_path = TEST_DATA
+    elif image_type == "AType_1" or \
+          image_type == "AType_2" or \
+          image_type == "AType_3":
+        data_path = os.path.join(ADDITIONAL_DATA, image_type)
+    else:
+        raise Exception("Image type '%s' is not recognized" % image_type)
+
+    ext = 'jpg'
+    return os.path.join(data_path, "{}-crop.{}".format(image_id, ext))
+
 def get_image_data(image_id, image_type):
     """
     Method to get image data as np.array specifying image id and type
@@ -55,8 +79,6 @@ def get_image_data(image_id, image_type):
     assert img is not None, "Failed to read image : %s, %s" % (image_id, image_type)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     return img
-
-
 
 
 def maxHist(hist):
@@ -224,29 +246,20 @@ def get_and_crop_image(image_id, image_type):
     return [image_id, img, rectangle]
 
 
-
-
-
 def parallelize_image_cropping(image_ids):
-    out = open('rectangles.csv', "w")
-    out.write("image_id,type,x,y,w,h,img_shp_0_init,img_shape1_init,img_shp_0,img_shp_1\n")
-    imf_d = {}
+    """
+    Function which crops images and 
+    outputs *-crop.jpg files into the
+    crop_train directory.
+    """
     p = Pool(cpu_count())
+
     for type in enumerate(types):
-        partial_get_and_crop = partial(get_and_crop_image, image_type = type[1])    
+        print("Type is: ", type)
+        partial_get_and_crop = partial(get_and_crop_image, image_type = type[1])  
         ret = p.map(partial_get_and_crop, image_ids[type[0]])
+
         for i in range(len(ret)):
-            out.write(image_ids[type[0]][i])
-            out.write(',' + str(type[1]))
-            out.write(',' + str(ret[i][2][0]))
-            out.write(',' + str(ret[i][2][1]))
-            out.write(',' + str(ret[i][2][2]))
-            out.write(',' + str(ret[i][2][3]))
-            out.write(',' + str(ret[i][2][4]))
-            out.write(',' + str(ret[i][2][5]))
-            out.write(',' + str(ret[i][2][6]))
-            out.write(',' + str(ret[i][2][7]))
-            out.write('\n')
             img = get_image_data(image_ids[type[0]][i], type[1])
             if(img.shape[0] > img.shape[1]):
                 tile_size = (int(img.shape[1]*256/img.shape[0]), 256)
@@ -258,17 +271,10 @@ def parallelize_image_cropping(image_ids):
                           (ret[i][2][0]+ret[i][2][2], ret[i][2][1]+ret[i][2][3]),
                           255,
                           2)
-            plt.imshow(img)
-            plt.show()
-
             crop_img = img[ret[i][2][1]:ret[i][2][1]+ret[i][2][3], ret[i][2][0]:ret[i][2][0]+ret[i][2][2]]
-            plt.imshow(crop_img)
-            plt.show()
+            print("Writing cropped image!")
+            cv2.imwrite(str(get_cropped_filename(image_ids[type[0]][i], type[1])), crop_img)
         ret = []
-    out.close()
-
     return
-
-
 
 parallelize_image_cropping(type_ids)
