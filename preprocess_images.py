@@ -268,11 +268,14 @@ def parallelize_image_cropping(image_ids):
             img = cv2.resize(img, dsize=tile_size)
             cv2.rectangle(img,
                           (ret[i][2][0], ret[i][2][1]), 
-                          (ret[i][2][0]+ret[i][2][2], ret[i][2][1]+ret[i][2][3]),
+                          # (ret[i][2][0]+ret[i][2][2], ret[i][2][1]+ret[i][2][3]),
+                          (ret[i][2][0]+255, ret[i][2][1]+255),
                           255,
                           2)
             crop_img = img[ret[i][2][1]:ret[i][2][1]+ret[i][2][3], ret[i][2][0]:ret[i][2][0]+ret[i][2][2]]
+            crop_img = cv2.resize(crop_img, dsize=(255,255))
             print("Writing cropped image!")
+
             cv2.imwrite(str(get_cropped_filename(image_ids[type[0]][i], type[1])), crop_img)
         ret = []
     return
