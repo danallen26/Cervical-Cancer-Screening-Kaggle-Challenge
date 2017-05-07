@@ -1,7 +1,9 @@
 crop_train/
+crop_test/
 rectangles.csv
 cv2
 train/
+test/
 *.7z
 *.zip
 os

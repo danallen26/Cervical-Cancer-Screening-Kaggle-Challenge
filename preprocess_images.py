@@ -17,17 +17,25 @@ from subprocess import check_output
 print(check_output(["ls", "./train"]).decode("utf8"))
 
 TRAIN_DATA = "./train"
-CROP_DATA = "./crop_train"
+TEST_DATA = "./test"
+CROP_TRAIN_DATA = "./crop_train"
+CROP_TEST_DATA = "./crop_test"
 
-types = ['Type_1','Type_2','Type_3']
+# types = ['Type_1','Type_2','Type_3','Test']
+types = ['Test']
 type_ids = []
 
 for type in enumerate(types):
-    type_i_files = glob(os.path.join(TRAIN_DATA, type[1], "*.jpg"))
-    type_i_ids = np.array([s[len(TRAIN_DATA)+8:-4] for s in type_i_files])
+    if type[1] != "Test":
+        type_i_files = glob(os.path.join(TRAIN_DATA, type[1], "*.jpg"))
+        type_i_ids = np.array([s[len(TRAIN_DATA)+8:-4] for s in type_i_files])
+    else:
+        type_i_files = glob(os.path.join(TEST_DATA, "*.jpg"))
+        type_i_ids = np.array([s[len(TEST_DATA)+1:-4] for s in type_i_files])
     type_ids.append(type_i_ids)
     # type_ids.append(type_i_ids[:5])
 
+type_ids[0]
 print type_ids
 
 def get_filename(image_id, image_type):
@@ -46,7 +54,6 @@ def get_filename(image_id, image_type):
         data_path = os.path.join(ADDITIONAL_DATA, image_type)
     else:
         raise Exception("Image type '%s' is not recognized" % image_type)
-
     ext = 'jpg'
     return os.path.join(data_path, "{}.{}".format(image_id, ext))
 
@@ -57,12 +64,12 @@ def get_cropped_filename(image_id, image_type):
     if image_type == "Type_1" or \
         image_type == "Type_2" or \
         image_type == "Type_3":
-        data_path = os.path.join(CROP_DATA, image_type)
+        data_path = os.path.join(CROP_TRAIN_DATA, image_type)
     elif image_type == "Test":
-        data_path = TEST_DATA
+        data_path = CROP_TEST_DATA
     elif image_type == "AType_1" or \
-          image_type == "AType_2" or \
-          image_type == "AType_3":
+        image_type == "AType_2" or \
+        image_type == "AType_3":
         data_path = os.path.join(ADDITIONAL_DATA, image_type)
     else:
         raise Exception("Image type '%s' is not recognized" % image_type)
@@ -269,11 +276,11 @@ def parallelize_image_cropping(image_ids):
             cv2.rectangle(img,
                           (ret[i][2][0], ret[i][2][1]), 
                           # (ret[i][2][0]+ret[i][2][2], ret[i][2][1]+ret[i][2][3]),
-                          (ret[i][2][0]+255, ret[i][2][1]+255),
-                          255,
+                          (ret[i][2][0]+256, ret[i][2][1]+256),
+                          256,
                           2)
             crop_img = img[ret[i][2][1]:ret[i][2][1]+ret[i][2][3], ret[i][2][0]:ret[i][2][0]+ret[i][2][2]]
-            crop_img = cv2.resize(crop_img, dsize=(255,255))
+            crop_img = cv2.resize(crop_img, dsize=(256,256))
             print("Writing cropped image!")
 
             cv2.imwrite(str(get_cropped_filename(image_ids[type[0]][i], type[1])), crop_img)
