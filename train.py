@@ -67,7 +67,6 @@ def mini_batch(images, labels, num):
     p = np.random.permutation(len(images))
     images, labels = images[p], labels[p]
     return images[:num], labels[:num]
-    # np.random.shuffle(array)
 
 
 N = np.sum(len(type) for type in type_ids)  # Number of images in training set
@@ -81,12 +80,9 @@ for type in enumerate(types):
         labels[count, type[0]] = 1.0
         count += 1
 
-# mini_batch(stacked_images, labels, 50)
+stacked_images = stacked_images.reshape(-1,256*256*3)
 
-# training_data = np.array((i,l) for i,l in zip(stacked_images, labels))
-training_data = (stacked_images, labels)
-
-x_image = tf.placeholder(tf.float32, shape=[None, 256, 256, 3])  # 256 x 256 pixels, 3 colour channels
+x = tf.placeholder(tf.float32, shape=[None, 256*256*3])
 y_ = tf.placeholder(tf.float32, shape=[None, 3])  # 3 distinct classes 
 
 def weight_variable(shape):
@@ -110,6 +106,8 @@ def max_pool_2x2(x):
 
 W_conv1 = weight_variable([5, 5, 3, 16])
 b_conv1 = bias_variable([16])
+
+x_image = tf.reshape(x, [-1, 256, 256, 3])  # 256 x 256 pixels, 3 colour channels
 
 h_conv1 = tf.nn.relu(conv2d(x_image, W_conv1) + b_conv1)
 h_pool1 = max_pool_2x2(h_conv1)
@@ -152,11 +150,14 @@ accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 sess.run(tf.global_variables_initializer())
 for i in range(1000):
     x_batch, y_batch = mini_batch(stacked_images, labels, 1)
+    print("###################")
+    print("x_batch shape is {}, y_batch shape is {}".format(x_batch.shape, y_batch.shape))
+    print("###################")
     if i%100 == 0:
         train_accuracy = accuracy.eval(
-            feed_dict={x_image:x_batch, y_:y_batch, keep_prob: 1.0})
+            feed_dict={x: x_batch, y_: y_batch, keep_prob: 1.0})
         print("step %d, training accuracy %g"%(i, train_accuracy))
-    train_step.run(feed_dict={x_image: x_batch, y_: y_batch, keep_prob: 0.5})
+    train_step.run(feed_dict={x: x_batch, y_: y_batch, keep_prob: 0.5})
 
 print("test accuracy %g"%accuracy.eval(feed_dict={
     x_image: mnist.test.images, y_: mnist.test.labels, keep_prob: 1.0}))

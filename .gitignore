@@ -1,3 +1,4 @@
+MNIST_data/
 crop_train/
 crop_test/
 rectangles.csv
